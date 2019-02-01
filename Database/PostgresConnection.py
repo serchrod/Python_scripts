@@ -14,20 +14,15 @@ class PostgresConnection():
         self.host='localhost'
         self.user='postgres'
         self.database='postgres'
-        self.isredshift=False
         self.password=''
         self.psypg2_url=''
-
-        if self.isredshift:
-            self.port=5439
-        else:
-            self.port=5432
+        self.port=5432
         
     def connect(self):
         if self.psypg2_url.strip()=='':
             try:
-                self.conn=psycopg2.connect("dbname='{db}' user='{usr}' host='{ip}' password='{passwd}'"
-                .format(db=self.database,usr=self.user,ip=self.host,passwd=self.password))
+                self.conn=psycopg2.connect("dbname='{db}' user='{usr}' host='{ip}' password='{passwd}' port='{port}'"
+                .format(db=self.database,usr=self.user,ip=self.host,passwd=self.password,port=self.port))
                 self.cursor = self.conn.cursor()
                 
             except(psycopg2.OperationalError):
@@ -62,6 +57,21 @@ class PostgresConnection():
             print('Connection not established')
             return []
 
+
+    def executeQueryToDic(self,query):
+        if self.cursor != None:
+            try:
+                self.cursor.execute(query)
+                results=self.cursor.fetchall()
+                return dict(results)
+            except ValueError:
+                print('could not convert to dict probably many columns on operation')
+                return {}
+        else:
+            print('Connection not established')
+            return []
+
+
     #transform a pandas object 
     def queryToPandas(self,query):
         results=self.executeQuery(query)
@@ -73,12 +83,9 @@ class PostgresConnection():
             print('failed on create dataframe operation')
             sys.exit()
 
+
     #close a connection
     def closeConnection(self):
         self.cursor.close()
         self.conn.close()
-
-     #destructor
-     def __del__(self): 
-        self.closeConnection()
     
